@@ -1,7 +1,7 @@
 const { bot } = require("./bot");
 
-const { addCategory, paginationCategory, showCategory, removeCategory, editCategory } = require("./helper/category");
-const { addProduct, showProduct } = require("./helper/product");
+const { addCategory, paginationCategory, showCategory, removeCategory, editCategory, getAllCategories } = require("./helper/category");
+const { addProduct, showProduct, removeProduct } = require("./helper/product");
 
 bot.on("callback_query", async (query) => {
   const { data } = query;
@@ -21,4 +21,10 @@ bot.on("callback_query", async (query) => {
   if (data.includes('add_product-')) await addProduct(chatId, data.split('-')[1])
 
   if (data.includes('product_')) await showProduct(chatId, data.split('_')[1])
+
+  if (data.includes('del_product-')) await removeProduct(chatId, data.split('-')[1])
+
+  if (data.includes('rem_product-')) await removeProduct(chatId, data.split('-')[1], true)
+
+  if (data === 'Katalog') await getAllCategories(chatId)
 });

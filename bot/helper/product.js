@@ -72,10 +72,75 @@ const clearDraftProduct = async () => {
 
 const showProduct = async (chatId, productId) => {
   let product = await Product.findById(productId).populate(['category']).lean()
+  let user = await User.findOne({ chatId }).lean()
 
   await bot.sendPhoto(chatId, product.img, {
-    caption: `${product.title}\nTurkum: ${product.category.title}\nNarxi:${product.price} so'm\nTasnifi: ${product.text}`
+    caption: `<b>${product.title}</b>\n📦 Turkum: ${product.category.title}\n💸 Narxi: ${product.price} so'm\n🔥 Tasnifi:\n ${product.text}`,
+    parse_mode: 'HTML',
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: '➖',
+            callback_data: 'less_count'
+          },
+          {
+            text: '1',
+            callback_data: '1'
+          },
+          {
+            text: '➕',
+            callback_data: 'more_count'
+          }
+        ],
+        user.admin ?
+          [
+            {
+              text: '🖋 Tahrirlash',
+              callback_data: `edit_product-${product._id}`
+            },
+            {
+              text: '🗑 o\'chirish',
+              callback_data: `del_product-${product._id}`
+            }
+          ] : [],
+        [
+          {
+            text: '🛒 Savatchaga qo\'shish',
+            callback_data: 'add_cart'
+          }
+        ]
+      ]
+    }
   })
 }
 
-module.exports = { addProduct, addProductNext, clearDraftProduct, showProduct }
+const removeProduct = async (chatId, productId, sure) => {
+  let user = await User.findOne({ chatId }).lean()
+  if (user.admin) {
+    if (sure) {
+      await Product.findByIdAndDelete(productId)
+      await bot.sendMessage(chatId, `Mahsulot o'chirildi!`)
+    } else {
+      await bot.sendMessage(chatId, `Mahsulotni o'chirmoqchisiz. Qaroringiz qat'iymi?`, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '❌ Yo\'q',
+                callback_data: 'Katalog'
+              }, {
+                text: '✅ Ha',
+                callback_data: `rem_product-${productId}`
+              }
+            ]
+          ]
+        }
+      })
+    }
+  } else {
+    await bot.sendMessage(chatId, 'Sizga mahsulot o\'chirish mumkin emas!')
+  }
+}
+
+module.exports = { addProduct, addProductNext, clearDraftProduct, showProduct, removeProduct }
