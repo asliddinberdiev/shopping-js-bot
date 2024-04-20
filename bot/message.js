@@ -5,6 +5,7 @@ const { start, requestContact } = require("./helper/start");
 const { getAllUsers } = require("./helper/users");
 const { getAllCategories, newCategory, saveCategory } = require("./helper/category");
 const { addProductNext } = require("./helper/product");
+const { endOrder } = require("./helper/order");
 
 bot.on("message", async (msg) => {
   const chatId = msg.from.id;
@@ -18,9 +19,12 @@ bot.on("message", async (msg) => {
   }
 
   if (user) {
+
     if (text === "Foydalanuvchilar") return await getAllUsers(msg);
 
     if (text === "Katalog") return await getAllCategories(chatId);
+
+    if (user.action === "order" && msg.location) await endOrder(chatId, msg.location)
 
     if (user.action === "request_contact" && !user.phone) await requestContact(msg);
 

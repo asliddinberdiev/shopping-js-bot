@@ -3,7 +3,6 @@ const User = require("../../model/user");
 
 const { NewUserStartMsg } = require("./send_msgs");
 const { adminKeyboard, userKeyboard } = require("../menu/keyboard");
-const user = require("../../model/user");
 
 const ADMINS = process.env.ADMIN_PHONES.split(",");
 

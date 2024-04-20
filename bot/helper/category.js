@@ -6,7 +6,7 @@ const Product = require("../../model/product");
 const { NotAdminMsg } = require("./send_msgs");
 const { clearDraftProduct } = require('../helper/product')
 
-const getAllCategories = async (chatId, page = 1) => {
+const getAllCategories = async (chatId, page = 1, msg_id = null) => {
   await clearDraftProduct() // clear trash products delete
 
   let user = await User.findOne({ chatId }).lean();
@@ -22,7 +22,7 @@ const getAllCategories = async (chatId, page = 1) => {
     )
 
   let categories = await Category.find().skip(skip).limit(limit).lean();
-  if (categories.length === 0 && page !== 1) {
+  if (categories.length === 0 && skip > 0) {
     page--
     await User.findByIdAndUpdate(
       user._id,
@@ -46,36 +46,42 @@ const getAllCategories = async (chatId, page = 1) => {
     },
   ]);
 
-  await bot.sendMessage(chatId, `Kategoriyalar ro'yxati`, {
-    reply_markup: {
-      remove_keyboard: true,
-      inline_keyboard: [
-        ...categoryList,
-        [
-          {
-            text: "Ortga",
-            callback_data: page > 1 ? "prev_category" : page,
-          },
-          {
-            text: page,
-            callback_data: "0",
-          },
-          {
-            text: "Kiyingi",
-            callback_data: limit === categories.length ? "next_category" : page,
-          },
-        ],
-        user.admin
-          ? [
-            {
-              text: "Yangi kategoriya",
-              callback_data: "add_category",
-            },
-          ]
-          : [],
-      ],
-    },
-  });
+  const inline_keyboard = [
+    ...categoryList,
+    [
+      {
+        text: "Ortga",
+        callback_data: page > 1 ? "prev_category" : page,
+      },
+      {
+        text: page,
+        callback_data: "0",
+      },
+      {
+        text: "Kiyingi",
+        callback_data: limit === categories.length ? "next_category" : page,
+      },
+    ],
+    user.admin
+      ? [
+        {
+          text: "Yangi kategoriya",
+          callback_data: "add_category",
+        },
+      ]
+      : [],
+  ]
+
+  if (msg_id > 0) {
+    bot.editMessageReplyMarkup({ inline_keyboard }, { chat_id: chatId, message_id: msg_id })
+  } else {
+    await bot.sendMessage(chatId, `Kategoriyalar ro'yxati`, {
+      reply_markup: {
+        remove_keyboard: true,
+        inline_keyboard
+      },
+    });
+  }
 };
 
 const addCategory = async (chatId) => {
@@ -120,7 +126,7 @@ const newCategory = async (msg) => {
   }
 };
 
-const paginationCategory = async (chatId, action) => {
+const paginationCategory = async (chatId, action, msg_id = null) => {
   let user = await User.findOne({ chatId }).lean();
   let page = 1;
 
@@ -142,7 +148,7 @@ const paginationCategory = async (chatId, action) => {
       new: true,
     }
   );
-  await getAllCategories(chatId, page);
+  await getAllCategories(chatId, page, msg_id);
 };
 
 const showCategory = async (chatId, categoryId, page = 1) => {

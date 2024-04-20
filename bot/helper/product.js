@@ -70,49 +70,55 @@ const clearDraftProduct = async () => {
   }
 }
 
-const showProduct = async (chatId, productId) => {
+const showProduct = async (chatId, productId, count = 1, msg_id = null) => {
   let product = await Product.findById(productId).populate(['category']).lean()
   let user = await User.findOne({ chatId }).lean()
 
-  await bot.sendPhoto(chatId, product.img, {
-    caption: `<b>${product.title}</b>\n📦 Turkum: ${product.category.title}\n💸 Narxi: ${product.price} so'm\n🔥 Tasnifi:\n ${product.text}`,
-    parse_mode: 'HTML',
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: '➖',
-            callback_data: 'less_count'
-          },
-          {
-            text: '1',
-            callback_data: '1'
-          },
-          {
-            text: '➕',
-            callback_data: 'more_count'
-          }
-        ],
-        user.admin ?
-          [
-            {
-              text: '🖋 Tahrirlash',
-              callback_data: `edit_product-${product._id}`
-            },
-            {
-              text: '🗑 o\'chirish',
-              callback_data: `del_product-${product._id}`
-            }
-          ] : [],
-        [
-          {
-            text: '🛒 Savatchaga qo\'shish',
-            callback_data: 'add_cart'
-          }
-        ]
-      ]
-    }
-  })
+  const inline_keyboard = [
+    [
+      {
+        text: '➖',
+        callback_data: `less_count-${product._id}-${count}`
+      },
+      {
+        text: count,
+        callback_data: count
+      },
+      {
+        text: '➕',
+        callback_data: `more_count-${product._id}-${count}`
+      }
+    ],
+    user.admin ?
+      [
+        {
+          text: '🖋 Tahrirlash',
+          callback_data: `edit_product-${product._id}`
+        },
+        {
+          text: '🗑 o\'chirish',
+          callback_data: `del_product-${product._id}`
+        }
+      ] : [],
+    [
+      {
+        text: '🛒 Buyurtma berish',
+        callback_data: `order-${product._id}-${count}`
+      }
+    ]
+  ]
+
+  if (msg_id > 0) {
+    bot.editMessageReplyMarkup({ inline_keyboard }, { chat_id: chatId, message_id: msg_id })
+  } else {
+    await bot.sendPhoto(chatId, product.img, {
+      caption: `<b>${product.title}</b>\n📦 Turkum: ${product.category.title}\n💸 Narxi: ${product.price} so'm\n🔥 Tasnifi:\n ${product.text}`,
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard
+      }
+    })
+  }
 }
 
 const removeProduct = async (chatId, productId, sure) => {
